@@ -5,6 +5,7 @@ import os
 import time
 import random
 import datetime
+from argparse import ArgumentParser
 
 
 # just get page data
@@ -201,6 +202,12 @@ def clear_new_posts(new_posts):
 ################################################################################
 # Setup
 
+parser = ArgumentParser("Homeless in munich")
+
+parser.add_argument("email", help="Notification email for new ads.")
+
+args = parser.parse_args()
+
 
 parser_immo24 = 0
 parser_wggs = 1
@@ -335,7 +342,7 @@ while True:
             f.write(mail_body)
             f.close()
 
-            command = 'echo " Hurry up! " | mail -s "!!! HOUSING ALERT !!!" -a links <YOUR_EMAIL>'
+            command = 'echo " Hurry up! " | mail -s "!!! HOUSING ALERT !!!" -a links %s' % args.email
             os.system(command)
 
             # store how many posts were discovered already
