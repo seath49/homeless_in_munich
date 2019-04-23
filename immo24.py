@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-import urllib
-import requests
+import urllib.request
 import re
 import os
 import time
 import random
 import datetime
-import sys
-
 
 
 # just get page data
