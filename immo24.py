@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import urllib.request
+import requests
 import re
 import os
 import time
@@ -16,19 +16,13 @@ except ImportError:
 
 # just get page data
 def get_page(url):
-    # html = requests.get(url).text
-    # return BeautifulSoup(html, "lxml")
-    # url = urllib.parse.quote(url)
-    # print("From:", url)
-    # url = urllib.parse.quote(url)
-
-    # print("To:", url)
-    req = urllib.request.Request(url)
-    resp = urllib.request.urlopen(req)
-    return resp.read()
+    r = requests.get(url)
+    if r.status_code != requests.codes.ok:
+        print("Querying %s retuned %d" %(url, r.status_code))
+    return r.text
 
 
-# immobilienscout24 link and caption extraction 
+# immobilienscout24 link and caption extraction
 def parse_immo24(data):
     adverts = re.findall(r'<h5(.*?)</h5>', str(data))
     titles = []
@@ -208,12 +202,41 @@ def clear_new_posts(new_posts):
 ################################################################################
 # Setup
 
+LAIM = "Laim"
+PASING = "Pasing"
+GERMERING = "Germering"
+GILCHING = "Gilching"
+SCHWABING_WEST = "Schwabing-West"
+MAXVORSTADT = "Maxvorstadt"
+SCHANTHALERHOEHE = "Schwanthalerhoehe"
+SENDLING = "Sendling"
+SENDLING_WESTPARK = "Sendling-Westpark"
+NYMPHENBURG = "Nymphenburg"
+ALL = "all"
+
+all_locations = [
+    LAIM,
+    PASING,
+    GERMERING,
+    GILCHING,
+    SCHWABING_WEST,
+    MAXVORSTADT,
+    SCHANTHALERHOEHE,
+    SENDLING,
+    SENDLING_WESTPARK,
+    NYMPHENBURG,
+]
+
 parser = ArgumentParser("Homeless in munich")
 
 parser.add_argument("email", help="Notification email for new ads.")
+parser.add_argument("--locations", choices=[ALL] + all_locations, default=ALL, nargs='+')
+parser.add_argument("--smpt-config", default="smtp_config.yml", dest="smtp_config")
 
 args = parser.parse_args()
 
+if ALL in args.locations:
+    args.locations = all_locations
 
 parser_immo24 = 0
 parser_wggs = 1
@@ -227,27 +250,39 @@ urls = []
 
 # immobilienscout24
 # urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/-/-/-/EURO--900,00', parser_immo24))
-# urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Laim/-/-/EURO--900,00', parser_immo24))
-# urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Starnberg-Kreis/Gilching/-/-/EURO--900,00', parser_immo24))
-# urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Sendling/-/-/EURO--900,00', parser_immo24))
-# urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Schwabing-West/-/-/EURO--900,00', parser_immo24))
-# urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Maxvorstadt/-/-/EURO--900,00', parser_immo24))
-# urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Schwanthalerhoehe/-/-/EURO--900,00', parser_immo24))
+if LAIM in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Laim/-/-/EURO--900,00', parser_immo24))
+if GILCHING in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Starnberg-Kreis/Gilching/-/-/EURO--900,00', parser_immo24))
+if GERMERING in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Fuerstenfeldbruck-Kreis/Germering/-/-/EURO--900,00', parser_immo24))
+if SENDLING in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Sendling/-/-/EURO--900,00', parser_immo24))
+if SCHWABING_WEST in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Schwabing-West/-/-/EURO--900,00', parser_immo24))
+if MAXVORSTADT in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Maxvorstadt/-/-/EURO--900,00', parser_immo24))
+if SCHANTHALERHOEHE in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Schwanthalerhoehe/-/-/EURO--900,00', parser_immo24))
 # all Munich
 # urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/-/-/-/EURO--900,00', parser_immo24))
 
-
-urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Pasing/-/-/EURO--900,00', parser_immo24))
-urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Nymphenburg/-/-/EURO--900,00', parser_immo24))
-urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Sendling-Westpark/-/-/EURO--900,00', parser_immo24))
+if PASING in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Pasing/-/-/EURO--900,00', parser_immo24))
+if NYMPHENBURG in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Nymphenburg/-/-/EURO--900,00', parser_immo24))
+if SENDLING_WESTPARK in args.locations:
+    urls.append(url_('https://www.immobilienscout24.de/Suche/S-2/Wohnung-Miete/Bayern/Muenchen/Sendling-Westpark/-/-/EURO--900,00', parser_immo24))
 
 # wggesucht - 1-zimmer wohnung
 urls.append(url_('http://www.wg-gesucht.de/1-zimmer-wohnungen-in-Muenchen.90.1.1.0.html?offer_filter=1&stadt_key=90&sort_column=&sort_order=&autocompinp=M%C3%BCnchen&country_code=&countrymanuel=&city_name=&city_id=90&category=1&rent_type=2&sMin=&rMax=900&dFr=&hidden_dFrDe=&dTo=&hidden_dToDe=&radLat=&radLng=&radAdd=&radDis=0&ot[2124]=2124&ot[2127]=2127&ot[2129]=2129&ot[2132]=2132&ot[2133]=2133&ot[2134]=2134&ot[2139]=2139&hidden_wgFla=0&hidden_wgSea=0&hidden_wgSmo=0&hidden_wgAge=&hidden_wgMnF=0&hidden_wgMxT=0&sin=1&exc=0&hidden_rmMin=0&hidden_rmMax=0&pet=0&fur=0', parser_wggs))
+if GERMERING in args.locations:
+    urls.append(url_('https://www.wg-gesucht.de/1-zimmer-wohnungen-in-Germering.7165.1.1.0.html?offer_filter=1&sort_column=0&noDeact=1&city_id=7165&category=1&rent_type=2&rMax=900&sin=1', parser_wggs))
 
 # wggesucht - Wohnung
 urls.append(url_('http://www.wg-gesucht.de/wohnungen-in-Muenchen.90.2.1.0.html?offer_filter=1&stadt_key=90&sort_column=0&sort_order=&autocompinp=M%C3%BCnchen&country_code=&countrymanuel=&city_name=&city_id=90&category=2&rent_type=2&sMin=&rMax=900&dFr=&hidden_dFrDe=&dTo=&hidden_dToDe=&radLat=&radLng=&radAdd=&radDis=0&ot[2124]=2124&ot[2127]=2127&ot[2129]=2129&ot[2132]=2132&ot[2133]=2133&ot[2134]=2134&ot[2139]=2139&hidden_wgFla=0&hidden_wgSea=0&hidden_wgSmo=0&hidden_wgAge=&hidden_wgMnF=0&hidden_wgMxT=0&sin=1&exc=0&rmMin=0&rmMax=0&pet=0&fur=0', parser_wggs))
 
-# wggesucht - WG 
+# wggesucht - WG
 urls.append(url_('http://www.wg-gesucht.de/wg-zimmer-in-Muenchen.90.0.1.0.html?offer_filter=1&stadt_key=90&sort_column=0&sort_order=&autocompinp=M%C3%BCnchen&country_code=&countrymanuel=&city_name=&city_id=90&category=0&rent_type=2&sMin=&rMax=900&dFr=&hidden_dFrDe=&dTo=&hidden_dToDe=&radLat=&radLng=&radAdd=&radDis=0&ot[2124]=2124&ot[2127]=2127&ot[2129]=2129&ot[2132]=2132&ot[2133]=2133&ot[2134]=2134&ot[2139]=2139&wgFla=0&wgSea=0&wgSmo=0&wgAge=&wgMnF=0&wgMxT=0&sin=1&exc=0&hidden_rmMin=0&hidden_rmMax=0&pet=0&fur=0', parser_wggs))
 
 # ebay
@@ -344,6 +379,7 @@ while True:
         mail_body = 'Advertisments you need to check from ' + now.strftime('%Y-%m-%d @ %H:%M') + '\n\n'
         send_new_mail = False
 
+        print('Searching for places in ' + ', '.join(args.locations))
         print('Start of search:    ' + start_of_search.strftime('%Y-%m-%d @ %H:%M:%S'))
         print('Timestamp:          ' + now.strftime('%Y-%m-%d @ %H:%M:%S'))
 
