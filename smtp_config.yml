@@ -12,3 +12,4 @@ password: "<password>"
 
 ## If not set, email is sent to yourself.
 # recipient: "john.doe@foobar.com"
+
