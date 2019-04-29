@@ -6,6 +6,12 @@ import time
 import random
 import datetime
 from argparse import ArgumentParser
+import smtplib
+import yaml.loader
+try:
+    from yaml import CLoader as Loader
+except ImportError:
+    from yaml import Loader
 
 
 # just get page data
@@ -280,6 +286,27 @@ titles = []
 links = []
 data = ""
 
+smtp_server = None
+smtp_config = None
+try:
+    with open(args.smtp_config) as smtp_config_file:
+        smtp_config = yaml.load(smtp_config_file, Loader=Loader)
+
+        if 'user' not in smtp_config:
+            print('No user specified in %s. Using email address %s.' % (args.smtp_config, smtp_config['email']))
+            smtp_config['user'] = smtp_config['email']
+        if 'recipient' not in smtp_config:
+            print('No recipient specified in %s. Using email address %s.' % (args.smtp_config, smtp_config['email']))
+            smtp_config['recipient'] = smtp_config['email']
+
+        smtp_server = smtplib.SMTP(smtp_config['server'], smtp_config['port'])
+except smtplib.SMTPConnectError as e:
+    print("Error in connecting to %s:%d: %s" % (smtp_config['server'], smtp_config['port'], e.strerror))
+    smtp_server = None
+
+if smtp_server is None:
+    exit(1)
+
 start_of_search = datetime.datetime.now()
 while True:
     for site in range(len(urls)):
@@ -338,12 +365,25 @@ while True:
 
         if send_new_mail:
             # save temp file
-            f = open('links', 'w')
-            f.write(mail_body)
-            f.close()
+            #f = open('links', 'w')
+            #f.write(mail_body)
+            #f.close()
 
-            command = 'echo " Hurry up! " | mail -s "!!! HOUSING ALERT !!!" -a links %s' % args.email
-            os.system(command)
+            #command = 'echo " Hurry up! " | mail -s "!!! HOUSING ALERT !!!" -a links %s' % args.email
+            #os.system(command)
+            message = 'From: Homeless in Munich <%s>\n' % smtp_config['email']
+            message += 'To: %s\n' % smtp_config['recipient']
+            message += 'Subject: !!! HOUSING ALERT !!!\n'
+            message += mail_body
+
+            smtp_server.set_debuglevel(1)
+            smtp_server.starttls()
+            try:
+                smtp_server.login(smtp_config['user'], smtp_config['password'])
+            except smtplib.SMTPAuthenticationError as e:
+                print(e.smtp_error)
+                exit(1)
+            problems = smtp_server.sendmail(smtp_config['email'], smtp_config['recipient'], message)
 
             # store how many posts were discovered already
             for idx in range(len(posts_to_check)):
