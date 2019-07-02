@@ -1,0 +1,15 @@
+server: "smtp.yourhost.com"
+
+port: 587
+
+email: "john.doe@foobar.com"
+
+## Plain text but file is only readable by your user and in gitignore so you don't accidentally add it.
+password: "<password>"
+
+## If not set, email address is used.
+# user: "john_doe"
+
+## If not set, email is sent to yourself.
+# recipient: "john.doe@foobar.com"
+
